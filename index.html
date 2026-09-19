@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Helper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="main.css">
+</head>
+<body>
+ 
+<!-- ЭКРАН ВХОДА / РЕГИСТРАЦИИ -->
+<!-- Показывается поверх всего, пока пользователь не вошёл в аккаунт -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <span class="auth-mark">🎓</span>
+ 
+    <!-- Форма регистрации: ФИО, логин, группа, пароль, подтверждение пароля -->
+    <div id="registerForm">
+      <h1>Создать аккаунт</h1>
+      <p class="auth-sub">Заполни данные — вход по логину и паролю будет работать на любом устройстве</p>
+      <div class="auth-field">
+        <label for="regFio">ФИО</label>
+        <input id="regFio" type="text" placeholder="Иванов Иван Иванович" autocomplete="name">
+      </div>
+      <div class="auth-field">
+        <label for="regLogin">Логин</label>
+        <input id="regLogin" type="text" placeholder="ivanov21" autocomplete="username">
+      </div>
+      <div class="auth-field">
+        <label for="regGroup">Группа</label>
+        <input id="regGroup" type="text" placeholder="ИС-21" autocomplete="off">
+      </div>
+      <div class="auth-field">
+        <label for="regPass">Пароль</label>
+        <input id="regPass" type="password" placeholder="Придумай пароль" autocomplete="new-password">
+      </div>
+      <div class="auth-field">
+        <label for="regPass2">Повтори пароль</label>
+        <input id="regPass2" type="password" placeholder="Ещё раз" autocomplete="new-password">
+      </div>
+      <div class="auth-error" id="regError"></div>
+      <button class="btn" id="regSubmit" style="width:100%">Зарегистрироваться</button>
+      <p class="auth-warning">⚠️ Пароль не шифруется, поэтому не используй тот же пароль, что и на почте, Госуслугах или в других важных сервисах — придумай отдельный.</p>
+      <div class="auth-switch">Уже есть аккаунт? <button id="toLogin">Войти</button></div>
+    </div>
+ 
+    <!-- Форма входа: теперь по логину и паролю — работает на любом устройстве,
+         где открыта эта страница, а не только там, где регистрировались -->
+    <div id="loginForm" style="display:none">
+      <h1>С возвращением</h1>
+      <p class="auth-sub">Введи логин и пароль, чтобы продолжить</p>
+      <div class="auth-field">
+        <label for="loginLogin">Логин</label>
+        <input id="loginLogin" type="text" placeholder="ivanov21" autocomplete="username">
+      </div>
+      <div class="auth-field">
+        <label for="loginPass">Пароль</label>
+        <input id="loginPass" type="password" placeholder="Пароль" autocomplete="current-password">
+      </div>
+      <div class="auth-error" id="loginError"></div>
+      <button class="btn" id="loginSubmit" style="width:100%">Войти</button>
+      <div class="auth-switch">Ещё нет аккаунта? <button id="toRegisterFromLogin">Зарегистрироваться</button></div>
+    </div>
+  </div>
+</div>
+ 
+<!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
+<!-- Скрыто (display:none в JS), пока не выполнен вход -->
+<div class="shell" id="appShell" style="display:none;">
+ 
+ 
+  <header class="top">
+    <div class="brand-row">
+      <div class="brand"><span class="mark">🎓</span>Student Helper</div>
+      <div class="today-chip" id="todayChip"></div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-view="home" class="active">Главная</button>
+      <button data-view="schedule">Расписание</button>
+      <button data-view="tasks">Задачи</button>
+      <button data-view="grades">Оценки</button>
+      <button data-view="deadlines">Дедлайны</button>
+      <button data-view="profile">Профиль</button>
+    </nav>
+  </header>
+ 
+  <main>
+ 
+    <!-- ГЛАВНАЯ -->
+    <section class="view active" id="view-home">
+      <div class="greeting">
+        <h1>Привет, <span id="greetName">студент</span>!</h1>
+        <p>Твой помощник в учёбе — расписание, задачи, оценки и дедлайны в одном месте.</p>
+      </div>
+ 
+      <div class="tile-grid">
+        <button class="tile" data-view="schedule">
+          <div class="tile-top"><span class="glyph">📅</span><span class="count" id="cntSchedule">0 пар</span></div>
+          <h3>Расписание</h3>
+        </button>
+        <button class="tile" data-view="grades">
+          <div class="tile-top"><span class="glyph">📊</span><span class="count" id="cntGrades">—</span></div>
+          <h3>Оценки</h3>
+        </button>
+        <button class="tile" data-view="tasks">
+          <div class="tile-top"><span class="glyph">✓</span><span class="count" id="cntTasks">0 активных</span></div>
+          <h3>Задачи</h3>
+        </button>
+        <button class="tile" data-view="deadlines">
+          <div class="tile-top"><span class="glyph">⏰</span><span class="count" id="cntDeadlines">0</span></div>
+          <h3>Дедлайны</h3>
+        </button>
+      </div>
+ 
+      <div class="today-panel">
+        <h2>Сегодня</h2>
+        <div id="todayList"></div>
+      </div>
+    </section>
+ 
+    <!-- РАСПИСАНИЕ -->
+    <section class="view" id="view-schedule">
+      <div class="view-head">
+        <h2>Расписание</h2>
+        <span class="sub">Пары по дням недели</span>
+      </div>
+      <div class="form-row" id="scheduleForm">
+        <div class="field">
+          <label for="schDay">День</label>
+          <select id="schDay">
+            <option>Понедельник</option><option>Вторник</option><option>Среда</option>
+            <option>Четверг</option><option>Пятница</option><option>Суббота</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="schTime">Время</label>
+          <input id="schTime" type="time" value="09:00">
+        </div>
+        <div class="field grow">
+          <label for="schSubj">Предмет</label>
+          <input id="schSubj" type="text" placeholder="например, Информатика">
+        </div>
+        <div class="field grow">
+          <label for="schRoom">Кабинет / преподаватель</label>
+          <input id="schRoom" type="text" placeholder="ауд. 214, Иванова А.П.">
+        </div>
+        <button class="btn" id="addLesson">Добавить</button>
+      </div>
+      <div id="scheduleList"></div>
+    </section>
+ 
+    <!-- ЗАДАЧИ -->
+    <section class="view" id="view-tasks">
+      <div class="view-head">
+        <h2>Задачи</h2>
+        <span class="sub">Что нужно сделать</span>
+      </div>
+      <div class="form-row">
+        <div class="field grow">
+          <label for="taskText">Новая задача</label>
+          <input id="taskText" type="text" placeholder="Сделать конспект по химии">
+        </div>
+        <div class="field">
+          <label for="taskDue">Срок</label>
+          <input id="taskDue" type="date">
+        </div>
+        <button class="btn" id="addTask">Добавить</button>
+      </div>
+      <div class="filter-row" id="taskFilter">
+        <button data-filter="all" class="active">Все</button>
+        <button data-filter="active">Активные</button>
+        <button data-filter="done">Выполненные</button>
+      </div>
+      <div id="taskList"></div>
+    </section>
+ 
+    <!-- ОЦЕНКИ -->
+    <section class="view" id="view-grades">
+      <div class="view-head">
+        <h2>Оценки</h2>
+        <span class="sub">По предметам</span>
+      </div>
+      <div class="form-row">
+        <div class="field grow">
+          <label for="gradeSubj">Предмет</label>
+          <input id="gradeSubj" type="text" placeholder="Математика">
+        </div>
+        <div class="field">
+          <label for="gradeVal">Оценка</label>
+          <select id="gradeVal">
+            <option>5</option><option>4</option><option>3</option><option>2</option>
+          </select>
+        </div>
+        <button class="btn" id="addGrade">Добавить</button>
+      </div>
+      <div id="gradeList"></div>
+    </section>
+ 
+    <!-- ДЕДЛАЙНЫ -->
+    <section class="view" id="view-deadlines">
+      <div class="view-head">
+        <h2>Дедлайны</h2>
+        <span class="sub">Ближайшие сдачи и сроки</span>
+      </div>
+      <div class="form-row">
+        <div class="field grow">
+          <label for="dlTitle">Что сдать</label>
+          <input id="dlTitle" type="text" placeholder="Курсовая работа">
+        </div>
+        <div class="field grow">
+          <label for="dlSubj">Предмет</label>
+          <input id="dlSubj" type="text" placeholder="История">
+        </div>
+        <div class="field">
+          <label for="dlDate">Дата</label>
+          <input id="dlDate" type="date">
+        </div>
+        <button class="btn" id="addDeadline">Добавить</button>
+      </div>
+      <div id="deadlineList"></div>
+    </section>
+ 
+    <!-- ПРОФИЛЬ -->
+    <section class="view" id="view-profile">
+      <div class="view-head">
+        <h2>Профиль</h2>
+        <span class="sub" id="syncStatus">Профиль и фото</span>
+      </div>
+ 
+      <div class="profile-top">
+        <!-- Кружок с фото; если фото не загружено — показываем первые буквы ФИО -->
+        <div class="photo-circle" id="photoCircle">ФИ</div>
+        <div>
+          <!-- Настоящий input type=file спрятан, кликабельна только подпись-кнопка -->
+          <label class="photo-upload-label" for="photoInput">Загрузить фото</label>
+          <input type="file" id="photoInput" accept="image/*">
+        </div>
+      </div>
+ 
+      <div class="form-row" style="flex-direction:column; align-items:stretch;">
+        <div class="field grow">
+          <label for="profFio">ФИО</label>
+          <input id="profFio" type="text">
+        </div>
+        <div class="field grow">
+          <label for="profGroup">Группа</label>
+          <input id="profGroup" type="text">
+        </div>
+        <div style="display:flex; gap:10px; margin-top:6px;">
+          <button class="btn" id="profSave">Сохранить</button>
+          <button class="btn ghost" id="profLogout">Выйти из аккаунта</button>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- ВСЕ АККАУНТЫ (только для владельца сайта) -->
+    <!-- Появляется в меню и открывается, только если в адресе страницы есть ?admin=1 -->
+    <section class="view" id="view-admin">
+      <div class="view-head">
+        <h2>Все аккаунты</h2>
+        <span class="sub">Кто зарегистрировался в этом планере</span>
+      </div>
+      <div id="adminList"></div>
+    </section>
+ 
+  </main>
+ 
+  <footer>Данные сохраняются локально в этом браузере.</footer>
+</div>
+ 
+<script>
+// Весь код обёрнут в IIFE (самовызывающуюся асинхронную функцию),
+// чтобы переменные не "утекали" в глобальную область видимости страницы
+// и можно было дождаться (await) ответа облачного хранилища
+(async function(){
+  // Дни недели — используются и в расписании, и для определения "сегодня"
+  const DAYS = ["Понедельник","Вторник","Среда","Четверг","Пятница","Суббота","Воскресенье"];
+ 
+  // ---------- работа с localStorage ----------
+  // Все обращения к localStorage обёрнуты в try/catch: в некоторых браузерах
+  // (приватный режим, ограничения политики безопасности) доступ может быть запрещён,
+  // и страница не должна падать из-за этого.
+ 
+  // Достаём значение по ключу и разбираем JSON; если ничего нет — возвращаем fallback
+  function safeGet(key, fallback){
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch(e){ return fallback; }
+  }
+  // Сохраняем значение в localStorage в виде JSON-строки
+  function safeSet(key, val){
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){ /* ignore */ }
+  }
+ 
+  // ---------- общее состояние приложения ----------
+  // Всё хранится в одном объекте state и синхронизируется с localStorage
+  // при каждом изменении (см. вызовы safeSet ниже по коду)
+  let state = {
+    schedule: safeGet('sh_schedule', []),   // {id, day, time, subj, room} — пары в расписании
+    tasks: safeGet('sh_tasks', []),         // {id, text, due, done} — задачи
+    grades: safeGet('sh_grades', []),       // {id, subj, val} — оценки по предметам
+    deadlines: safeGet('sh_deadlines', [])  // {id, title, subj, date} — дедлайны
+  };
+  let taskFilter = 'all'; // текущий фильтр списка задач: all / active / done
+ 
+  // Простой генератор случайного короткого id для новых записей
+  function uid(){ return Math.random().toString(36).slice(2,9); }
+ 
+  // ---------- навигация по вкладкам ----------
+  // Кнопки вкладок сверху и плитки на главной ссылаются на один и тот же
+  // атрибут data-view, поэтому обрабатываем их одним обработчиком
+  const tabButtons = document.querySelectorAll('#tabs button, .tile[data-view]');
+  function showView(name){
+    // Показываем только нужный раздел (.view), остальные скрываем
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+    // Подсвечиваем активную вкладку в верхнем меню
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  }
+  tabButtons.forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
+ 
+  // ---------- сегодняшняя дата в шапке ----------
+  const now = new Date();
+  const jsDay = now.getDay(); // 0 = воскресенье ... 6 = суббота (стандарт JS)
+  // Переводим в порядок "Пн...Вс", как в массиве DAYS
+  const todayName = DAYS[(jsDay + 6) % 7];
+  document.getElementById('todayChip').textContent = todayName + ', ' + now.toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
+ 
+  // ---------- облачное хранилище (для синхронизации между устройствами) ----------
+  // db — общее хранилище документов у этого артефакта, assets — хранилище файлов (фото).
+  // Если страница открыта не на claude.ai или хранилище недоступно — обе останутся null,
+  // и приложение просто продолжит работать локально, в этом браузере (как раньше).
+  let cloudDb = null;
+  let cloudAssets = null;
+  try { cloudDb = (window.claude && window.claude.use) ? await window.claude.use('db') : null; } catch(e){ cloudDb = null; }
+  try { cloudAssets = (window.claude && window.claude.use) ? await window.claude.use('assets') : null; } catch(e){ cloudAssets = null; }
+ 
+  // Приводим логин к единому виду, чтобы "Ivanov21" и "ivanov21 " считались одним и тем же
+  function normalizeLogin(login){ return login.trim().toLowerCase().replace(/\s+/g, '_'); }
+  // Ссылка на документ аккаунта в облаке по логину
+  function accountRef(login){ return cloudDb.doc('accounts/' + normalizeLogin(login)); }
+ 
+  // Очередь облачных записей: пишем строго по одной, дожидаясь предыдущей записи,
+  // чтобы не отправлять в хранилище параллельные конфликтующие изменения одного документа
+  let cloudQueue = Promise.resolve();
+  function pushToCloud(){
+    if(!cloudDb || !account || !account.login) return; // облако недоступно или ещё не вошли
+    const payload = {
+      fio: account.fio,
+      group: account.group,
+      login: account.login,
+      password: account.password,
+      photoId: account.photoId || null,
+      schedule: state.schedule,
+      tasks: state.tasks,
+      grades: state.grades,
+      deadlines: state.deadlines,
+      updatedAt: Date.now()
+    };
+    cloudQueue = cloudQueue
+      .then(() => accountRef(account.login).set(payload))
+      .catch(() => { /* нет связи с облаком — локальная копия всё равно сохранена */ });
+  }
+ 
+  // ---------- аккаунт (регистрация / вход / профиль) ----------
+  // Аккаунт кэшируется локально (localStorage) для мгновенной загрузки и офлайн-режима,
+  // а при наличии облака — ещё и синхронизируется в общее хранилище по логину и паролю,
+  // поэтому вход с тем же логином и паролем на другом устройстве подтягивает те же данные.
+  // ВАЖНО: пароль хранится и передаётся в открытом виде — это не настоящая защита,
+  // а просто разделение "чей это аккаунт", подходящее для личного планера, а не для тайн.
+  let account = safeGet('sh_account', null); // { fio, group, login, password, photoId, photo } или null
+  // Флаг "сессия сохранена" — если true, при следующих заходах на ЭТОМ устройстве
+  // логин и пароль не спрашиваем, а сразу открываем приложение
+  let loggedIn = safeGet('sh_logged_in', false);
+ 
+  const authScreen = document.getElementById('authScreen');
+  const appShell = document.getElementById('appShell');
+  const registerForm = document.getElementById('registerForm');
+  const loginForm = document.getElementById('loginForm');
+ 
+  // Показываем экран входа/регистрации и прячем само приложение
+  function showAuthScreen(){
+    authScreen.style.display = 'flex';
+    appShell.style.display = 'none';
+    if(account){
+      // На этом устройстве уже кто-то входил — сразу открываем форму входа
+      // и подставляем его логин для удобства
+      registerForm.style.display = 'none';
+      loginForm.style.display = 'block';
+      document.getElementById('loginLogin').value = account.login || '';
+    } else {
+      registerForm.style.display = 'block';
+      loginForm.style.display = 'none';
+    }
+  }
+ 
+  // Перерисовывает все разделы приложения — нужно после того, как данные
+  // подгрузились из облака и заменили собой то, что было в state
+  function refreshAllViews(){
+    renderSchedule(); renderTasks(); renderGrades(); renderDeadlines(); renderHome();
+  }
+ 
+  // Показываем основное приложение и прячем экран входа.
+  // remember=true — запомнить сессию на этом устройстве, чтобы не спрашивать вход снова
+  function enterApp(remember){
+    if(remember){
+      loggedIn = true;
+      safeSet('sh_logged_in', true);
+    }
+    authScreen.style.display = 'none';
+    appShell.style.display = 'block';
+    document.getElementById('greetName').textContent = account.fio.split(' ')[0] || account.fio;
+    renderProfile();
+    updateAdminTabVisibility();
+  }
+ 
+  // Переключение между формами "Войти" / "Зарегистрироваться" на экране авторизации
+  document.getElementById('toLogin').addEventListener('click', () => {
+    registerForm.style.display = 'none';
+    loginForm.style.display = 'block';
+  });
+  document.getElementById('toRegisterFromLogin').addEventListener('click', () => {
+    loginForm.style.display = 'none';
+    registerForm.style.display = 'block';
+  });
+ 
+  // Обработка регистрации: проверяем поля, при наличии облака — что логин свободен,
+  // создаём аккаунт локально и (если доступно) в облаке
+  document.getElementById('regSubmit').addEventListener('click', async () => {
+    const fio = document.getElementById('regFio').value.trim();
+    const login = document.getElementById('regLogin').value.trim();
+    const group = document.getElementById('regGroup').value.trim();
+    const pass = document.getElementById('regPass').value;
+    const pass2 = document.getElementById('regPass2').value;
+    const errorBox = document.getElementById('regError');
+ 
+    if(!fio || !login || !group || !pass){ errorBox.textContent = 'Заполни все поля'; return; }
+    if(pass !== pass2){ errorBox.textContent = 'Пароли не совпадают'; return; }
+ 
+    // Если облако доступно — проверяем, что такой логин ещё не занят
+    if(cloudDb){
+      errorBox.textContent = 'Проверяем логин…';
+      try {
+        const snap = await accountRef(login).get();
+        if(snap.exists){ errorBox.textContent = 'Такой логин уже занят, придумай другой'; return; }
+      } catch(e){ /* облако недоступно прямо сейчас — продолжаем локально */ }
+    }
+    errorBox.textContent = '';
+ 
+    account = { fio, group, login, password: pass, photoId: null, photo: null };
+    // Новый аккаунт — начинаем с чистых данных, а не с того, что могло остаться
+    // в этом браузере от другого пользователя
+    state.schedule = []; state.tasks = []; state.grades = []; state.deadlines = [];
+    safeSet('sh_account', account);
+    safeSet('sh_schedule', state.schedule); safeSet('sh_tasks', state.tasks);
+    safeSet('sh_grades', state.grades); safeSet('sh_deadlines', state.deadlines);
+    pushToCloud(); // сохраняем в облако, если оно доступно
+    refreshAllViews();
+    enterApp(true);
+  });
+ 
+  // Обработка входа: сверяем логин и пароль — сперва с локальным кэшем (быстро,
+  // работает офлайн), а если не совпало и доступно облако — ищем аккаунт там
+  document.getElementById('loginSubmit').addEventListener('click', async () => {
+    const login = document.getElementById('loginLogin').value.trim();
+    const pass = document.getElementById('loginPass').value;
+    const errorBox = document.getElementById('loginError');
+    if(!login || !pass){ errorBox.textContent = 'Введи логин и пароль'; return; }
+ 
+    // Быстрый локальный вариант: тот же аккаунт, что уже сохранён в этом браузере
+    if(account && normalizeLogin(account.login) === normalizeLogin(login) && account.password === pass){
+      errorBox.textContent = '';
+      document.getElementById('loginPass').value = '';
+      enterApp(true);
+      return;
+    }
+ 
+    // Иначе — пробуем найти аккаунт в облаке (например, вход с другого устройства)
+    if(cloudDb){
+      errorBox.textContent = 'Входим…';
+      try {
+        const snap = await accountRef(login).get();
+        if(!snap.exists){ errorBox.textContent = 'Аккаунт с таким логином не найден'; return; }
+        const data = snap.data();
+        if(data.password !== pass){ errorBox.textContent = 'Неверный пароль'; return; }
+ 
+        // Подтягиваем аккаунт и все данные из облака — заменяем ими локальное состояние
+        account = { fio: data.fio, group: data.group, login: data.login, password: data.password, photoId: data.photoId || null, photo: null };
+        state.schedule = data.schedule || [];
+        state.tasks = data.tasks || [];
+        state.grades = data.grades || [];
+        state.deadlines = data.deadlines || [];
+        safeSet('sh_account', account);
+        safeSet('sh_schedule', state.schedule); safeSet('sh_tasks', state.tasks);
+        safeSet('sh_grades', state.grades); safeSet('sh_deadlines', state.deadlines);
+ 
+        errorBox.textContent = '';
+        document.getElementById('loginPass').value = '';
+        refreshAllViews();
+        enterApp(true);
+      } catch(e){
+        errorBox.textContent = 'Не получилось связаться с облаком, попробуй ещё раз';
+      }
+    } else {
+      errorBox.textContent = 'Аккаунт не найден на этом устройстве';
+    }
+  });
+ 
+  // Выход из аккаунта: сбрасываем сохранённую сессию и возвращаемся на экран входа
+  // (сами данные аккаунта — в облаке и в локальном кэше — никуда не удаляются)
+  document.getElementById('profLogout').addEventListener('click', () => {
+    loggedIn = false;
+    safeSet('sh_logged_in', false);
+    showAuthScreen();
+  });
+ 
+  // ================= ПРОФИЛЬ =================
+  // Заполняет поля профиля текущими данными аккаунта и показывает фото или инициалы
+  function renderProfile(){
+    document.getElementById('profFio').value = account.fio;
+    document.getElementById('profGroup').value = account.group;
+    const circle = document.getElementById('photoCircle');
+    if(account.photoId){
+      // Фото загружено в облачное хранилище — используем постоянную ссылку по id
+      circle.innerHTML = `<img src="/_blob/${account.photoId}" alt="Фото профиля">`;
+    } else if(account.photo){
+      // Резервный вариант без облака: фото хранится прямо в этом браузере
+      circle.innerHTML = `<img src="${account.photo}" alt="Фото профиля">`;
+    } else {
+      // Если фото нет — показываем инициалы (первые буквы имени и фамилии)
+      const parts = account.fio.trim().split(/\s+/);
+      const initials = (parts[0]?.[0] || '') + (parts[1]?.[0] || '');
+      circle.textContent = initials.toUpperCase() || 'ФИ';
+    }
+    // Подсказка, синхронизируются ли данные между устройствами
+    document.getElementById('syncStatus').textContent = cloudDb
+      ? 'Синхронизируется между устройствами'
+      : 'Хранится только на этом устройстве';
+  }
+ 
+  // Загрузка фото. Если доступно облачное хранилище файлов — загружаем туда
+  // (тогда фото будет видно на любом устройстве), иначе сохраняем прямо в браузере
+  document.getElementById('photoInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+ 
+    if(cloudAssets){
+      try {
+        const result = await cloudAssets.upload(file);
+        account.photoId = result.id;
+        account.photo = null;
+        safeSet('sh_account', account);
+        pushToCloud();
+        renderProfile();
+        return;
+      } catch(e){ /* не получилось — попробуем сохранить локально ниже */ }
+    }
+ 
+    // Локальный запасной вариант: читаем файл как data URL
+    const reader = new FileReader();
+    reader.onload = () => {
+      account.photo = reader.result;
+      safeSet('sh_account', account);
+      renderProfile();
+    };
+    reader.readAsDataURL(file);
+  });
+ 
+  // Сохранение изменений ФИО и группы из формы профиля
+  document.getElementById('profSave').addEventListener('click', () => {
+    const fio = document.getElementById('profFio').value.trim();
+    const group = document.getElementById('profGroup').value.trim();
+    if(!fio || !group) return;
+    account.fio = fio;
+    account.group = group;
+    safeSet('sh_account', account);
+    pushToCloud();
+    document.getElementById('greetName').textContent = fio.split(' ')[0] || fio;
+    renderProfile();
+  });
+ 
+  // ================= СПИСОК ВСЕХ АККАУНТОВ (только для владельца сайта) =================
+  // Пункт меню "Все аккаунты" виден только тому, кто вошёл под этим конкретным логином.
+  // Доступ проверяется по логину уже вошедшего аккаунта — а сам вход по-прежнему
+  // защищён паролем, так что просто угадать ссылку недостаточно.
+  const ADMIN_LOGIN = 'kind_8083';
+  function isAdminAccount(){ return !!account && normalizeLogin(account.login) === normalizeLogin(ADMIN_LOGIN); }
+ 
+  const adminTab = document.createElement('button');
+  adminTab.dataset.view = 'admin';
+  adminTab.textContent = 'Все аккаунты';
+  adminTab.addEventListener('click', () => { showView('admin'); renderAdmin(); });
+ 
+  // Показывает или убирает пункт меню "Все аккаунты" в зависимости от того,
+  // под каким логином сейчас выполнен вход. Вызывается при каждом входе в приложение.
+  function updateAdminTabVisibility(){
+    if(isAdminAccount()){
+      if(!adminTab.isConnected) document.getElementById('tabs').appendChild(adminTab);
+    } else {
+      if(adminTab.isConnected) adminTab.remove();
+    }
+  }
+ 
+  // Загружает и показывает список всех зарегистрированных аккаунтов из облака.
+  // Пароли в списке намеренно не показываются — только кто зарегистрирован.
+  async function renderAdmin(){
+    const list = document.getElementById('adminList');
+    if(!isAdminAccount()){ list.innerHTML = ''; return; } // на всякий случай — доступ только владельцу
+    if(!cloudDb){
+      list.innerHTML = '<div class="empty-line">Облако недоступно — список аккаунтов не загрузить</div>';
+      return;
+    }
+    list.innerHTML = '<div class="empty-line">Загружаем…</div>';
+    try {
+      const snap = await cloudDb.collection('accounts').get();
+      if(snap.empty){
+        list.innerHTML = '<div class="empty-line">Пока никто не зарегистрировался</div>';
+        return;
+      }
+      list.innerHTML = '';
+      snap.docs.forEach(doc => {
+        const a = doc.data();
+        const row = document.createElement('div');
+        row.className = 'admin-row';
+        const initials = ((a.fio || '').trim().split(/\s+/).map(p => p[0]).join('').slice(0,2) || '?').toUpperCase();
+        const photoHtml = a.photoId ? `<img src="/_blob/${a.photoId}" alt="">` : initials;
+        row.innerHTML = `<div class="a-photo">${photoHtml}</div>
+          <div class="a-info"><strong>${escapeHtml(a.fio || doc.id)}</strong>
+          <span>логин: ${escapeHtml(a.login || doc.id)} · группа: ${escapeHtml(a.group || '—')}</span></div>`;
+        list.appendChild(row);
+      });
+    } catch(e){
+      list.innerHTML = '<div class="empty-line">Не получилось загрузить список — попробуй обновить страницу</div>';
+    }
+  }
+ 
+  // При запуске страницы решаем, что показать:
+  // если есть аккаунт и сессия была сохранена — сразу открываем приложение,
+  // иначе показываем экран входа или регистрации
+  if(account && loggedIn){
+    enterApp(false); // сессия уже сохранена, повторно её сохранять не нужно
+  } else {
+    showAuthScreen();
+  }
+ 
+  // ================= РАСПИСАНИЕ =================
+  // Отрисовывает список пар, сгруппированный по дням недели (Пн–Сб)
+  function renderSchedule(){
+    const list = document.getElementById('scheduleList');
+    list.innerHTML = ''; // очищаем перед перерисовкой
+ 
+    // Раскладываем все пары по дням в объект { "Понедельник": [...], ... }
+    const byDay = {};
+    DAYS.slice(0,6).forEach(d => byDay[d] = []);
+    state.schedule.forEach(l => { if(byDay[l.day]) byDay[l.day].push(l); });
+ 
+    // Для каждого дня выводим заголовок и список пар (или "Пар нет")
+    Object.keys(byDay).forEach(day => {
+      const lessons = byDay[day].sort((a,b) => a.time.localeCompare(b.time)); // сортировка по времени
+      const head = document.createElement('div');
+      head.className = 'day-col-head';
+      head.textContent = day;
+      list.appendChild(head);
+      if(lessons.length === 0){
+        const empty = document.createElement('div');
+        empty.className = 'empty-line';
+        empty.textContent = 'Пар нет';
+        list.appendChild(empty);
+        return;
+      }
+      lessons.forEach(l => {
+        const row = document.createElement('div');
+        row.className = 'lesson-row';
+        row.innerHTML = `<div class="time">${l.time}</div>
+          <div class="subj"><strong>${escapeHtml(l.subj)}</strong>${l.room ? `<span>${escapeHtml(l.room)}</span>` : ''}</div>
+          <button class="del-x" aria-label="Удалить" data-id="${l.id}">✕</button>`;
+        // Кнопка удаления конкретной пары
+        row.querySelector('.del-x').addEventListener('click', () => {
+          state.schedule = state.schedule.filter(x => x.id !== l.id);
+          safeSet('sh_schedule', state.schedule);
+          pushToCloud(); // отправляем изменения в облако, если оно доступно
+          renderSchedule(); renderHome(); // обновляем и расписание, и блок "Сегодня" на главной
+        });
+        list.appendChild(row);
+      });
+    });
+    // Счётчик пар для плитки на главной странице
+    document.getElementById('cntSchedule').textContent = state.schedule.length + (state.schedule.length === 1 ? ' пара' : ' пар');
+  }
+ 
+  // Обработчик кнопки "Добавить" в форме расписания
+  document.getElementById('addLesson').addEventListener('click', () => {
+    const subj = document.getElementById('schSubj').value.trim();
+    if(!subj) return; // без названия предмета пару не добавляем
+    state.schedule.push({
+      id: uid(),
+      day: document.getElementById('schDay').value,
+      time: document.getElementById('schTime').value || '09:00',
+      subj,
+      room: document.getElementById('schRoom').value.trim()
+    });
+    safeSet('sh_schedule', state.schedule); // сохраняем в localStorage
+    pushToCloud(); // отправляем изменения в облако, если оно доступно
+    // очищаем поля формы после добавления
+    document.getElementById('schSubj').value = '';
+    document.getElementById('schRoom').value = '';
+    renderSchedule(); renderHome();
+  });
+ 
+  // ================= ЗАДАЧИ =================
+  // Отрисовывает список задач с учётом текущего фильтра (все / активные / выполненные)
+  function renderTasks(){
+    const list = document.getElementById('taskList');
+    list.innerHTML = '';
+    // Сортируем по сроку выполнения; задачи без срока уходят в конец списка
+    let items = state.tasks.slice().sort((a,b) => (a.due||'9999').localeCompare(b.due||'9999'));
+    if(taskFilter === 'active') items = items.filter(t => !t.done);
+    if(taskFilter === 'done') items = items.filter(t => t.done);
+    if(items.length === 0){
+      list.innerHTML = '<div class="empty-line">Пока пусто</div>';
+    }
+    items.forEach(t => {
+      const row = document.createElement('div');
+      row.className = 'task-row' + (t.done ? ' done' : ''); // done — зачёркнутый текст
+      row.innerHTML = `<input type="checkbox" ${t.done ? 'checked' : ''} aria-label="Выполнено">
+        <div class="txt"><strong>${escapeHtml(t.text)}</strong>${t.due ? `<span>до ${formatDate(t.due)}</span>` : ''}</div>
+        <button class="del-x" aria-label="Удалить">✕</button>`;
+      // Отметка "выполнено/не выполнено" по клику на чекбокс
+      row.querySelector('input').addEventListener('change', e => {
+        t.done = e.target.checked;
+        safeSet('sh_tasks', state.tasks);
+        pushToCloud(); // отправляем изменения в облако, если оно доступно
+        renderTasks(); renderHome();
+      });
+      // Удаление задачи
+      row.querySelector('.del-x').addEventListener('click', () => {
+        state.tasks = state.tasks.filter(x => x.id !== t.id);
+        safeSet('sh_tasks', state.tasks);
+        pushToCloud(); // отправляем изменения в облако, если оно доступно
+        renderTasks(); renderHome();
+      });
+      list.appendChild(row);
+    });
+    // Счётчик активных (невыполненных) задач для плитки на главной
+    document.getElementById('cntTasks').textContent = state.tasks.filter(t => !t.done).length + ' активных';
+  }
+ 
+  // Добавление новой задачи из формы
+  document.getElementById('addTask').addEventListener('click', () => {
+    const text = document.getElementById('taskText').value.trim();
+    if(!text) return; // без текста задачу не создаём
+    state.tasks.push({ id: uid(), text, due: document.getElementById('taskDue').value, done: false });
+    safeSet('sh_tasks', state.tasks);
+    pushToCloud(); // отправляем изменения в облако, если оно доступно
+    document.getElementById('taskText').value = '';
+    document.getElementById('taskDue').value = '';
+    renderTasks(); renderHome();
+  });
+ 
+  // Переключение фильтра списка задач (Все / Активные / Выполненные)
+  document.querySelectorAll('#taskFilter button').forEach(b => {
+    b.addEventListener('click', () => {
+      taskFilter = b.dataset.filter;
+      document.querySelectorAll('#taskFilter button').forEach(x => x.classList.toggle('active', x === b));
+      renderTasks();
+    });
+  });
+ 
+  // ================= ОЦЕНКИ =================
+  // Отрисовывает оценки, сгруппированные по предметам, со средним баллом по каждому
+  function renderGrades(){
+    const list = document.getElementById('gradeList');
+    list.innerHTML = '';
+    // Группируем оценки в объект { "Математика": [оценка, оценка, ...], ... }
+    const bySubj = {};
+    state.grades.forEach(g => { (bySubj[g.subj] = bySubj[g.subj] || []).push(g); });
+    const subjects = Object.keys(bySubj);
+    if(subjects.length === 0){
+      list.innerHTML = '<div class="empty-line">Оценок пока нет</div>';
+    }
+    subjects.forEach(subj => {
+      const grades = bySubj[subj];
+      // Средний балл по предмету
+      const avg = (grades.reduce((s,g) => s + Number(g.val), 0) / grades.length).toFixed(1);
+      const block = document.createElement('div');
+      block.className = 'subject-block';
+      block.innerHTML = `<div class="sb-head"><h3>${escapeHtml(subj)}</h3><span class="avg">${avg}</span></div>
+        <div class="grade-pills"></div>`;
+      const pillWrap = block.querySelector('.grade-pills');
+      // Каждая оценка — отдельная "плашка" с кнопкой удаления
+      grades.forEach(g => {
+        const pill = document.createElement('span');
+        pill.className = 'grade-pill';
+        pill.innerHTML = `${g.val} <button aria-label="Удалить">✕</button>`;
+        pill.querySelector('button').addEventListener('click', () => {
+          state.grades = state.grades.filter(x => x.id !== g.id);
+          safeSet('sh_grades', state.grades);
+          pushToCloud(); // отправляем изменения в облако, если оно доступно
+          renderGrades(); renderHome();
+        });
+        pillWrap.appendChild(pill);
+      });
+      list.appendChild(block);
+    });
+    // Общий средний балл по всем предметам — для плитки на главной
+    if(state.grades.length){
+      const overall = (state.grades.reduce((s,g) => s + Number(g.val), 0) / state.grades.length).toFixed(2);
+      document.getElementById('cntGrades').textContent = 'ср. ' + overall;
+    } else {
+      document.getElementById('cntGrades').textContent = '—';
+    }
+  }
+ 
+  // Добавление новой оценки из формы
+  document.getElementById('addGrade').addEventListener('click', () => {
+    const subj = document.getElementById('gradeSubj').value.trim();
+    if(!subj) return;
+    state.grades.push({ id: uid(), subj, val: document.getElementById('gradeVal').value });
+    safeSet('sh_grades', state.grades);
+    pushToCloud(); // отправляем изменения в облако, если оно доступно
+    document.getElementById('gradeSubj').value = '';
+    renderGrades(); renderHome();
+  });
+ 
+  // ================= ДЕДЛАЙНЫ =================
+  // Считает, сколько дней осталось до даты (может быть отрицательным, если срок прошёл)
+  function daysUntil(dateStr){
+    if(!dateStr) return null;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const target = new Date(dateStr + 'T00:00:00');
+    return Math.round((target - today) / 86400000); // 86400000 мс = 1 сутки
+  }
+  // Форматирует дату вида "2026-09-19" в читаемый вид "19 сент."
+  function formatDate(dateStr){
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('ru-RU', {day:'numeric', month:'short'});
+  }
+  // Отрисовывает список дедлайнов, отсортированный по дате, с бейджем "через N дн."
+  function renderDeadlines(){
+    const list = document.getElementById('deadlineList');
+    list.innerHTML = '';
+    const items = state.deadlines.slice().sort((a,b) => a.date.localeCompare(b.date));
+    if(items.length === 0){
+      list.innerHTML = '<div class="empty-line">Дедлайнов нет</div>';
+    }
+    items.forEach(d => {
+      const left = daysUntil(d.date);
+      const row = document.createElement('div');
+      // Подсветка цветом в зависимости от срочности: просрочено / скоро (≤3 дней) / обычное
+      row.className = 'deadline-row' + (left < 0 ? ' overdue' : left <= 3 ? ' soon' : '');
+      const badgeText = left < 0 ? 'просрочено' : left === 0 ? 'сегодня' : left === 1 ? 'завтра' : `через ${left} дн.`;
+      row.innerHTML = `<div class="badge">${badgeText}</div>
+        <div class="txt"><strong>${escapeHtml(d.title)}</strong><span>${escapeHtml(d.subj || '')} · ${formatDate(d.date)}</span></div>
+        <button class="del-x" aria-label="Удалить">✕</button>`;
+      row.querySelector('.del-x').addEventListener('click', () => {
+        state.deadlines = state.deadlines.filter(x => x.id !== d.id);
+        safeSet('sh_deadlines', state.deadlines);
+        pushToCloud(); // отправляем изменения в облако, если оно доступно
+        renderDeadlines(); renderHome();
+      });
+      list.appendChild(row);
+    });
+    document.getElementById('cntDeadlines').textContent = state.deadlines.length;
+  }
+ 
+  // Добавление нового дедлайна из формы
+  document.getElementById('addDeadline').addEventListener('click', () => {
+    const title = document.getElementById('dlTitle').value.trim();
+    const date = document.getElementById('dlDate').value;
+    if(!title || !date) return; // без названия и даты дедлайн не создаём
+    state.deadlines.push({ id: uid(), title, subj: document.getElementById('dlSubj').value.trim(), date });
+    safeSet('sh_deadlines', state.deadlines);
+    pushToCloud(); // отправляем изменения в облако, если оно доступно
+    document.getElementById('dlTitle').value = '';
+    document.getElementById('dlSubj').value = '';
+    document.getElementById('dlDate').value = '';
+    renderDeadlines(); renderHome();
+  });
+ 
+  // ================= ГЛАВНАЯ СТРАНИЦА =================
+  // Собирает блок "Сегодня": пары текущего дня из расписания + ближайший дедлайн
+  function renderHome(){
+    const list = document.getElementById('todayList');
+    list.innerHTML = '';
+    const todays = state.schedule.filter(l => l.day === todayName).sort((a,b) => a.time.localeCompare(b.time));
+    if(todays.length === 0){
+      list.innerHTML = '<div class="empty-line">На сегодня пар не добавлено</div>';
+    } else {
+      todays.forEach(l => {
+        const row = document.createElement('div');
+        row.className = 'today-row';
+        row.innerHTML = `<div class="time">${l.time}</div>
+          <div class="what"><strong>${escapeHtml(l.subj)}</strong>${l.room ? `<span>${escapeHtml(l.room)}</span>` : ''}</div>`;
+        list.appendChild(row);
+      });
+    }
+    // Дописываем в конец блока ближайший по дате дедлайн (если он есть)
+    const upcoming = state.deadlines.slice().sort((a,b) => a.date.localeCompare(b.date))[0];
+    if(upcoming){
+      const left = daysUntil(upcoming.date);
+      const note = document.createElement('div');
+      note.className = 'today-row';
+      note.innerHTML = `<div class="time">⏰</div>
+        <div class="what"><strong>${escapeHtml(upcoming.title)}</strong><span>${left < 0 ? 'просрочено' : left === 0 ? 'сегодня' : `через ${left} дн.`}</span></div>`;
+      list.appendChild(note);
+    }
+  }
+ 
+  // Экранирует спецсимволы HTML, чтобы текст пользователя нельзя было
+  // использовать для внедрения своего HTML/скриптов (защита от XSS)
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+ 
+  // Первичная отрисовка всех разделов при загрузке страницы
+  renderSchedule();
+  renderTasks();
+  renderGrades();
+  renderDeadlines();
+  renderHome();
+})();
+</script>
+</body>
+</html>
+ 
