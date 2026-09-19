@@ -378,6 +378,14 @@ const cloudAssets = null;
   // Простой генератор случайного короткого id для новых записей
   function uid(){ return Math.random().toString(36).slice(2,9); }
  
+  // Достаёт из ФИО именно Имя для приветствия, а не Фамилию.
+  // ФИО вводится в порядке "Фамилия Имя Отчество", поэтому имя — второе слово;
+  // если ввели только одно слово — используем его как есть.
+  function getFirstName(fio){
+    const parts = fio.trim().split(/\s+/);
+    return parts[1] || parts[0] || fio;
+  }
+ 
   // ---------- навигация по вкладкам ----------
   // Кнопки вкладок сверху и плитки на главной ссылаются на один и тот же
   // атрибут data-view, поэтому обрабатываем их одним обработчиком
@@ -474,7 +482,7 @@ const cloudAssets = null;
     }
     authScreen.style.display = 'none';
     appShell.style.display = 'block';
-    document.getElementById('greetName').textContent = account.fio.split(' ')[0] || account.fio;
+    document.getElementById('greetName').textContent = getFirstName(account.fio);
     renderProfile();
     updateAdminTabVisibility();
   }
@@ -640,7 +648,7 @@ const cloudAssets = null;
     account.group = group;
     safeSet('sh_account', account);
     pushToCloud();
-    document.getElementById('greetName').textContent = fio.split(' ')[0] || fio;
+    document.getElementById('greetName').textContent = getFirstName(fio);
     renderProfile();
   });
  
