@@ -62,7 +62,7 @@
       </div>
       <div class="auth-error" id="regError"></div>
       <button class="btn" id="regSubmit" style="width:100%">Зарегистрироваться</button>
-      <p class="auth-warning">⚠️ Пароль не шифруется, поэтому не используй тот же пароль, что и на почте, Госуслугах или в других важных сервисах — придумай отдельный.</p>
+      <p class="auth-warning">🔒 Пароль хранится в базе только в виде необратимого хеша — даже владелец сайта не сможет его посмотреть. Но на всякий случай не используй тот же пароль, что и на почте или Госуслугах.</p>
       <div class="auth-switch">Уже есть аккаунт? <button id="toLogin">Войти</button></div>
     </div>
  
@@ -410,6 +410,17 @@ const cloudAssets = null;
  
   // Приводим логин к единому виду, чтобы "Ivanov21" и "ivanov21 " считались одним и тем же
   function normalizeLogin(login){ return login.trim().toLowerCase().replace(/\s+/g, '_'); }
+ 
+  // Превращает пароль в необратимый "отпечаток" (хеш) перед сохранением —
+  // сам исходный пароль нигде не хранится и не передаётся, поэтому его не
+  // сможет увидеть даже владелец сайта, заглянув в базу данных.
+  // Логин подмешивается в хеш как "соль", чтобы одинаковые пароли у разных
+  // людей давали разные хеши в базе.
+  async function hashPassword(login, password){
+    const data = new TextEncoder().encode(normalizeLogin(login) + '::' + password);
+    const digestBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(digestBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
   // Ссылка на документ аккаунта в облаке по логину
   function accountRef(login){ return cloudDb.doc('accounts/' + normalizeLogin(login)); }
  
@@ -439,8 +450,9 @@ const cloudAssets = null;
   // Аккаунт кэшируется локально (localStorage) для мгновенной загрузки и офлайн-режима,
   // а при наличии облака — ещё и синхронизируется в общее хранилище по логину и паролю,
   // поэтому вход с тем же логином и паролем на другом устройстве подтягивает те же данные.
-  // ВАЖНО: пароль хранится и передаётся в открытом виде — это не настоящая защита,
-  // а просто разделение "чей это аккаунт", подходящее для личного планера, а не для тайн.
+  // ВАЖНО: пароль никогда не хранится и не передаётся в открытом виде — перед
+  // сохранением и сравнением он превращается в SHA-256 хеш (см. hashPassword ниже),
+  // поэтому даже владелец базы данных не может увидеть исходный пароль.
   let account = safeGet('sh_account', null); // { fio, group, login, password, photoId, photo } или null
   // Флаг "сессия сохранена" — если true, при следующих заходах на ЭТОМ устройстве
   // логин и пароль не спрашиваем, а сразу открываем приложение
@@ -520,7 +532,7 @@ const cloudAssets = null;
     }
     errorBox.textContent = '';
  
-    account = { fio, group, login, password: pass, photoId: null, photo: null };
+    account = { fio, group, login, password: await hashPassword(login, pass), photoId: null, photo: null };
     // Новый аккаунт — начинаем с чистых данных, а не с того, что могло остаться
     // в этом браузере от другого пользователя
     state.schedule = []; state.tasks = []; state.grades = []; state.deadlines = [];
@@ -539,9 +551,10 @@ const cloudAssets = null;
     const pass = document.getElementById('loginPass').value;
     const errorBox = document.getElementById('loginError');
     if(!login || !pass){ errorBox.textContent = 'Введи логин и пароль'; return; }
+    const passHash = await hashPassword(login, pass); // сравнивать будем хеши, не сам пароль
  
     // Быстрый локальный вариант: тот же аккаунт, что уже сохранён в этом браузере
-    if(account && normalizeLogin(account.login) === normalizeLogin(login) && account.password === pass){
+    if(account && normalizeLogin(account.login) === normalizeLogin(login) && account.password === passHash){
       errorBox.textContent = '';
       document.getElementById('loginPass').value = '';
       enterApp(true);
@@ -555,7 +568,7 @@ const cloudAssets = null;
         const snap = await accountRef(login).get();
         if(!snap.exists){ errorBox.textContent = 'Аккаунт с таким логином не найден'; return; }
         const data = snap.data();
-        if(data.password !== pass){ errorBox.textContent = 'Неверный пароль'; return; }
+        if(data.password !== passHash){ errorBox.textContent = 'Неверный пароль'; return; }
  
         // Подтягиваем аккаунт и все данные из облака — заменяем ими локальное состояние
         account = { fio: data.fio, group: data.group, login: data.login, password: data.password, photoId: data.photoId || null, photo: null };
