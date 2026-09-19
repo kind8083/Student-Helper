@@ -378,9 +378,13 @@
     inset: 0;
     background: var(--paper);
     display: flex;
-    align-items: center;
+    align-items: flex-start;   /* было center — из-за этого длинную форму на телефоне обрезало сверху и снизу */
     justify-content: center;
     padding: 20px;
+    padding-top: max(40px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(40px, env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;          /* теперь если форма выше экрана — её можно пролистать */
+    -webkit-overflow-scrolling: touch;
     z-index: 50;
   }
   .auth-card {
