@@ -271,7 +271,56 @@
   <footer>Данные сохраняются локально в этом браузере.</footer>
 </div>
  
-<script>
+<script type="module">
+// Подключаем Firebase (Firestore) — именно здесь хранятся аккаунты и данные,
+// чтобы вход по логину и паролю работал с любого устройства и любого браузера.
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, doc, getDoc, setDoc, collection, getDocs
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+ 
+// Конфигурация твоего проекта Firebase (это не секретный ключ — его можно
+// хранить прямо в коде страницы, доступ ограничивается правилами Firestore)
+const firebaseConfig = {
+  apiKey: "AIzaSyA6yChbwWtHtBXgJ03_uarhzcRgisZxx3U",
+  authDomain: "student-helper-d6dcf.firebaseapp.com",
+  projectId: "student-helper-d6dcf",
+  storageBucket: "student-helper-d6dcf.firebasestorage.app",
+  messagingSenderId: "876871718290",
+  appId: "1:876871718290:web:4cf3f76390e859421d5d4b"
+};
+const firebaseApp = initializeApp(firebaseConfig);
+const firestore = getFirestore(firebaseApp);
+ 
+// Небольшая "прослойка", которая делает вызовы Firestore похожими на простой
+// db.doc(...)/db.collection(...) — остальной код ниже написан именно под такой вид
+// и не знает, что под капотом теперь настоящий Firebase, а не что-то другое.
+const cloudDb = {
+  doc(path){
+    const [col, id] = path.split('/');
+    const ref = doc(firestore, col, id);
+    return {
+      async get(){
+        const snap = await getDoc(ref);
+        return { exists: snap.exists(), data: () => snap.data() };
+      },
+      async set(data){ await setDoc(ref, data); }
+    };
+  },
+  collection(name){
+    const ref = collection(firestore, name);
+    return {
+      async get(){
+        const snap = await getDocs(ref);
+        return { empty: snap.empty, docs: snap.docs.map(d => ({ id: d.id, data: () => d.data() })) };
+      }
+    };
+  }
+};
+// Firebase Storage (для фото между устройствами) не подключён — он требует
+// платный тариф Blaze. Фото профиля поэтому хранится только в этом браузере.
+const cloudAssets = null;
+ 
 // Весь код обёрнут в IIFE (самовызывающуюся асинхронную функцию),
 // чтобы переменные не "утекали" в глобальную область видимости страницы
 // и можно было дождаться (await) ответа облачного хранилища
@@ -330,13 +379,7 @@
   document.getElementById('todayChip').textContent = todayName + ', ' + now.toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
  
   // ---------- облачное хранилище (для синхронизации между устройствами) ----------
-  // db — общее хранилище документов у этого артефакта, assets — хранилище файлов (фото).
-  // Если страница открыта не на claude.ai или хранилище недоступно — обе останутся null,
-  // и приложение просто продолжит работать локально, в этом браузере (как раньше).
-  let cloudDb = null;
-  let cloudAssets = null;
-  try { cloudDb = (window.claude && window.claude.use) ? await window.claude.use('db') : null; } catch(e){ cloudDb = null; }
-  try { cloudAssets = (window.claude && window.claude.use) ? await window.claude.use('assets') : null; } catch(e){ cloudAssets = null; }
+  // cloudDb и cloudAssets уже подготовлены выше на основе Firebase.
  
   // Приводим логин к единому виду, чтобы "Ivanov21" и "ivanov21 " считались одним и тем же
   function normalizeLogin(login){ return login.trim().toLowerCase().replace(/\s+/g, '_'); }
@@ -925,4 +968,5 @@
 </script>
 </body>
 </html>
+
  
